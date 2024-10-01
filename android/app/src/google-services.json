@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "88444820251",
+    "project_id": "speaksi-6f952",
+    "storage_bucket": "speaksi-6f952.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88444820251:android:03cad42609a349bd4511be",
+        "android_client_info": {
+          "package_name": "com.example.speaksi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbYU8HAVuaVu6IoRCUz-w-xeaw1QWGTuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
