@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'package:convex_bottom_bar/convex_bottom_bar.dart';
+import 'package:provider/provider.dart';
+import 'package:speaksi/screens/profile_screen.dart';
+import 'package:speaksi/screens/recordingapp_screen.dart';
+import 'package:speaksi/screens/speech_recognition.dart';
+import 'package:speaksi/screens/spell_screen.dart';
+import 'package:speaksi/screens/voiceassistant_screen.dart';
 
-
-
+import '../widget/tapandspeakmodel.dart';
+import 'magic_spell_screen.dart'; // Import the custom widget
+import 'custom_convex_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -12,139 +19,138 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
+  // Define a list of pages to navigate
+  final List<Widget> _pages = [
+    HomeContent(),
+    RecordingApp(),
+
+
+    ProfileScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Color(0xFF5737EE),
-        title: Text("Home"),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            // Add back navigation logic here
-          },
-        ),
+        backgroundColor: Colors.black,
+        elevation: 0,
         actions: [
-          CircleAvatar(
-            backgroundImage: NetworkImage("https://your-profile-image-url-here.com"), // Replace with user image
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileScreen(),
+                  ),
+                );
+              },
+              child: CircleAvatar(
+                backgroundImage: NetworkImage('https://i.imgur.com/BoN9kdC.png'),
+                radius: 20,
+              ),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Speech Recognition Section
-              GestureDetector(
-                onTap: () {
-                  // Navigate to Speech Recognition page
-                },
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
+      body: _pages[_currentIndex], // Display the currently selected page
 
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'images/img_2.png', // Replace with actual image
-                        height: 150,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        "Speech Recognition",
-                        style: TextStyle(
-                          color: Color(0xFF441D99),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              // Magic Spell Section
-              GestureDetector(
-                onTap: () {
-                  // Navigate to Magic Spell page
-                },
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-
-                      SizedBox(height: 10),
-                      Image.network(
-                        'https://your-second-image-url-here.com', // Replace with actual image
-                        height: 150,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        "Magic Spell",
-                        style: TextStyle(
-                          color: Color(0xFF5737EE),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: SalomonBottomBar(
+      // Use the shared ConvexAppBar for the bottom navigation
+      bottomNavigationBar: CustomConvexBottomBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
+        onTap: (int index) {
           setState(() {
-            _currentIndex = index;
+            _currentIndex = index; // Update the tab index when tapped
           });
         },
-        items: [
-          /// Home
-          SalomonBottomBarItem(
-            icon: Icon(Icons.home),
-            title: Text("Home"),
-            selectedColor: Color(0xFF5737EE),
-          ),
+      ),
+    );
+  }
+}
 
-          /// Learning
-          SalomonBottomBarItem(
-            icon: Icon(Icons.school),
-            title: Text("Learning"),
-            selectedColor: Color(0xFF5737EE),
-          ),
 
-          /// Profile
-          SalomonBottomBarItem(
-            icon: Icon(Icons.person),
-            title: Text("Profile"),
-            selectedColor: Color(0xFF5737EE),
-          ),
-        ],
+// Home content widget
+class HomeContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Speech Recognition Container
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => VoiceAssistantScreen()),
+            ); // Navigate to TapAndSpeakScreen when this is pressed
+
+          },
+          child: _buildContainer('Speech recognition', 'images/img_2.png'),
+        ),
+        // Magic Spell Container
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SpellScreen()),
+            );
+          },
+          child: _buildContainer('Magic spell', 'images/img_4.png'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContainer(String title, String imagePath) {
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withOpacity(0.2),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              imagePath,
+              height: 250,
+              width: 400,
+            ),
+            SizedBox(height: 10),
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF441D99),
+                    Color(0xFF5737EE),
+                    Color(0xFF6A35EE),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

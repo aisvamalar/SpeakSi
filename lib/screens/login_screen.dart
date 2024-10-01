@@ -3,9 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:speaksi/screens/home_screen.dart';
 import 'package:speaksi/screens/signup_screen.dart';
 import 'package:speaksi/screens/toast.dart';
+
+
+import 'home_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -50,20 +53,20 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 150), // Increased height for spacing
-            // Animated "Welcome Back" text
-            Text(
-              'Welcome Back',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            )
-                .animate() // Start animation here
-                .fadeIn(duration: 1000.ms) // Fade-in effect
-                .slideY(begin: 1.0, end: 0.0, curve: Curves.easeInOut) // Slide-in effect from bottom
-                .then(delay: 500.ms) // Delay between animations
-               ,
+                // Animated "Welcome Back" text
+                Text(
+                  'Welcome Back',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                )
+                    .animate() // Start animation here
+                    .fadeIn(duration: 1000.ms) // Fade-in effect
+                    .slideY(begin: 1.0, end: 0.0, curve: Curves.easeInOut) // Slide-in effect from bottom
+                    .then(delay: 500.ms) // Delay between animations
+                ,
 
                 SizedBox(height: 12), // Adjusted spacing
                 Text(
@@ -138,22 +141,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(height: 40), // More spacing before button
                       // Login Button
                       SizedBox(
-                          width: 200,
+                        width: 200,
                         height:50,// Add your custom width here
-                          child: ElevatedButton(
-                            onPressed: _isSigning ? null : _signIn,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: Size(double.infinity, 50), // This will now be adjusted by the SizedBox width
-                              backgroundColor: Color(0xFF7B3DFF),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24.0),
-                              ),
+                        child: ElevatedButton(
+                          onPressed: _isSigning ? null : _signIn,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: Size(double.infinity, 50), // This will now be adjusted by the SizedBox width
+                            backgroundColor: Color(0xFF7B3DFF),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.0),
                             ),
-                            child: _isSigning
-                                ? CircularProgressIndicator(color: Colors.white,)
-                                : Text('Log in',style: TextStyle(color: Colors.white,),),
                           ),
-                          ),
+                          child: _isSigning
+                              ? CircularProgressIndicator(color: Colors.white,)
+                              : Text('Log in',style: TextStyle(color: Colors.white,),),
+                        ),
+                      ),
                       SizedBox(height: 30), // Added spacing after the login button
                       // Social Media Login
                       Text(
@@ -164,11 +167,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSocialLoginButton('images/img_3.png',),
+                          _buildSocialLoginButton('images/img_1.png',),
+                          SizedBox(width: 16),
+                          _buildSocialLoginButton('images/img_3.png'),
                           SizedBox(width: 16),
                           _buildSocialLoginButton('images/img.png'),
-                          SizedBox(width: 16),
-                          _buildSocialLoginButton('images/img_1.png'),
                         ],
                       ),
                       SizedBox(height: 40), // Added more spacing before the Sign-up option

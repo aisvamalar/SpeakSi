@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:speaksi/screens/home_screen.dart';
+
+import 'home_screen.dart';
+
 
 class SignupScreen extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
@@ -119,11 +121,11 @@ class SignupScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildSocialLoginButton('images/img_3.png',),
+                    _buildSocialLoginButton('images/img_1.png',),
+                    SizedBox(width: 16),
+                    _buildSocialLoginButton('images/img_3.png'),
                     SizedBox(width: 16),
                     _buildSocialLoginButton('images/img.png'),
-                    SizedBox(width: 16),
-                    _buildSocialLoginButton('images/img_1.png'),
                   ],
                 ),
               ),
