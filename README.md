@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # speaksi
 
 A new Flutter project.
@@ -14,3 +15,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# Speaksi
+an app to help speech impaired people with the help of AI
+>>>>>>> 0e8b2b58b3ceaab730ba23474a3cafc0abd8c077
