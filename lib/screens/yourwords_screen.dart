@@ -119,7 +119,7 @@ class YourWordsScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => RecordingApp()),
+                    MaterialPageRoute(builder: (context) => RecordingScreen()),
                   );
                 },
               ),
@@ -129,7 +129,7 @@ class YourWordsScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => VoiceAssistantScreen()),
+                        builder: (context) => CombinedScreen()),
                   );
                 },
               ),
@@ -164,7 +164,7 @@ class YourWordsScreen extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => VoiceAssistantScreen()),
+            MaterialPageRoute(builder: (context) => CombinedScreen()),
           );
         },
         child: Image.asset(

@@ -65,16 +65,27 @@ dependencies:
   flutter_svg: ^2.0.6
   flutter_animate: ^4.5.0
   audioplayers: 6.1.0
-  speech_to_text: ^6.1.1
+
+
   sqflite: ^2.0.0+3
-  path_provider: ^2.0.1
+
   provider: ^6.0.0
-
-
-
+  record: ^4.4.4
+  path_provider: ^2.0.15
+  speech_to_text: ^6.3.0
+  pdf: ^3.10.4
+  just_audio: ^0.9.38
   permission_handler: ^11.3.1
+
+  shimmer: ^3.0.0
+  path: ^1.9.0
+
+
+
+
   flutter_sound: 9.6.0
   convex_bottom_bar: ^3.2.0
+
 
 
 
@@ -103,7 +114,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-     - images/
+    - images/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -5,10 +5,34 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speaksi/screens/signup_screen.dart';
 import 'package:speaksi/screens/toast.dart';
-
-
 import 'home_screen.dart';
 
+class AuthService {
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    return await _firebaseAuth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  Future<UserCredential> signInWithGoogle() async {
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    final GoogleSignInAuthentication? googleAuth =
+    await googleUser?.authentication;
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth?.accessToken,
+      idToken: googleAuth?.idToken,
+    );
+
+    return await _firebaseAuth.signInWithCredential(credential);
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -16,7 +40,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -35,8 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isLoggedIn = sharedPreferences!.getBool('isLoggedIn') ?? false;
     if (isLoggedIn) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-            builder: (ctx) => HomeScreen()),
+        MaterialPageRoute(builder: (ctx) => HomeScreen()),
       );
     }
   }
@@ -52,8 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 150), // Increased height for spacing
-                // Animated "Welcome Back" text
+                SizedBox(height: 150),
                 Text(
                   'Welcome Back',
                   style: TextStyle(
@@ -62,26 +84,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.white,
                   ),
                 )
-                    .animate() // Start animation here
-                    .fadeIn(duration: 1000.ms) // Fade-in effect
-                    .slideY(begin: 1.0, end: 0.0, curve: Curves.easeInOut) // Slide-in effect from bottom
-                    .then(delay: 500.ms) // Delay between animations
-                ,
-
-                SizedBox(height: 12), // Adjusted spacing
+                    .animate()
+                    .fadeIn(duration: 1000.ms)
+                    .slideY(begin: 1.0, end: 0.0, curve: Curves.easeInOut)
+                    .then(delay: 500.ms),
+                SizedBox(height: 12),
                 Text(
-                  'welcome back we missed you',
+                  'Welcome back, we missed you',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                   ),
                 ),
-                SizedBox(height: 60), // More spacing before form
+                SizedBox(height: 60),
                 Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Email Input
                       TextFormField(
                         controller: _emailController,
                         decoration: InputDecoration(
@@ -103,8 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 30), // Added spacing between input fields
-                      // Password Input
+                      SizedBox(height: 30),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: obscureText,
@@ -138,62 +156,48 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 40), // More spacing before button
-                      // Login Button
+                      SizedBox(height: 40),
                       SizedBox(
                         width: 200,
-                        height:50,// Add your custom width here
+                        height: 50,
                         child: ElevatedButton(
                           onPressed: _isSigning ? null : _signIn,
                           style: ElevatedButton.styleFrom(
-                            minimumSize: Size(double.infinity, 50), // This will now be adjusted by the SizedBox width
                             backgroundColor: Color(0xFF7B3DFF),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24.0),
                             ),
                           ),
                           child: _isSigning
-                              ? CircularProgressIndicator(color: Colors.white,)
-                              : Text('Log in',style: TextStyle(color: Colors.white,),),
+                              ? CircularProgressIndicator(color: Colors.white)
+                              : Text('Log in', style: TextStyle(color: Colors.white)),
                         ),
                       ),
-                      SizedBox(height: 30), // Added spacing after the login button
-                      // Social Media Login
-                      Text(
-                        'Or continue with',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      SizedBox(height: 30), // More spacing before icons
+                      SizedBox(height: 30),
+                      Text('Or continue with', style: TextStyle(color: Colors.grey)),
+                      SizedBox(height: 30),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSocialLoginButton('images/img_1.png',),
+                          _buildSocialLoginButton('images/img_1.png'),
                           SizedBox(width: 16),
                           _buildSocialLoginButton('images/img_3.png'),
                           SizedBox(width: 16),
                           _buildSocialLoginButton('images/img.png'),
                         ],
                       ),
-                      SizedBox(height: 40), // Added more spacing before the Sign-up option
-                      // Signup Option
+                      SizedBox(height: 40),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            "Don't have an account?",
-                            style: TextStyle(color: Colors.grey),
-                          ),
+                          Text("Don't have an account?", style: TextStyle(color: Colors.grey)),
                           TextButton(
                             onPressed: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (context) => SignupScreen()),
+                                MaterialPageRoute(builder: (context) => SignupScreen()),
                               );
                             },
-                            child: Text(
-                              'Sign up',
-                              style: TextStyle(color: Color(0xFF7B3DFF)),
-                            ),
+                            child: Text('Sign up', style: TextStyle(color: Color(0xFF7B3DFF))),
                           ),
                         ],
                       ),
@@ -208,10 +212,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Social Media Login Button
   Widget _buildSocialLoginButton(String imagePath) {
     return InkWell(
-      onTap: _signInWithGoogle, // You can assign specific handlers for each
+      onTap: _signInWithGoogle,
       child: Container(
         width: 50,
         height: 50,
@@ -234,53 +237,47 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        UserCredential userCredential = await _firebaseAuth
-            .signInWithEmailAndPassword(
+        final userCredential = await _authService.signInWithEmail(
           email: _emailController.text,
           password: _passwordController.text,
         );
 
-        setState(() {
-          _isSigning = false;
-        });
-
         if (userCredential.user != null) {
           sharedPreferences!.setBool('isLoggedIn', true);
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (ctx) => HomeScreen(),
-            ),
+            MaterialPageRoute(builder: (ctx) => HomeScreen()),
           );
         }
       } catch (e) {
+        showToast(message: e.toString());
+      } finally {
         setState(() {
           _isSigning = false;
         });
-        showToast(message: 'Sign in failed: $e');
       }
     }
   }
 
   Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isSigning = true;
+    });
+
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication? googleAuth =
-      await googleUser?.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth?.accessToken,
-        idToken: googleAuth?.idToken,
-      );
-      UserCredential userCredential =
-      await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _authService.signInWithGoogle();
+
       if (userCredential.user != null) {
         sharedPreferences!.setBool('isLoggedIn', true);
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-              builder: (ctx) => HomeScreen()),
+          MaterialPageRoute(builder: (ctx) => HomeScreen()),
         );
       }
     } catch (e) {
-      showToast(message: 'Google sign in failed: $e');
+      showToast(message: e.toString());
+    } finally {
+      setState(() {
+        _isSigning = false;
+      });
     }
   }
 }

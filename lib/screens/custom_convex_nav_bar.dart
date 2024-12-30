@@ -18,7 +18,7 @@ class CustomConvexBottomBar extends StatelessWidget {
       initialActiveIndex: currentIndex,
       onTap: onTap,
       style: TabStyle.fixed,
-      elevation: 0, // Remove elevation for a flatter look
+      elevation: 0,
       gradient: LinearGradient(
         colors: [
           Color(0xFF441D99),
@@ -27,9 +27,8 @@ class CustomConvexBottomBar extends StatelessWidget {
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-      ),
-      color: Colors.white, // Set icon color to white
-      activeColor: Colors.white60, // Set active icon color to white
+      ),      color: Colors.white,
+      activeColor: Colors.white60,
     );
   }
 }

@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
           height: screenHeight * 0.5, // 50% of the screen height
           width: screenWidth, // Full screen width
           child: Image.asset(
-            'images/download-unscreen.gif', // Path to the GIF
+            'images/n3.gif', // Path to the GIF
             fit: BoxFit.cover, // Fill the container
           ),
         ),
