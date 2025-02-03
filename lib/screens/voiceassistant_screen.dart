@@ -181,7 +181,7 @@ class _CombinedScreenState extends State<CombinedScreen> with SingleTickerProvid
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.169.242:5000/predict'),
+        Uri.parse('http://192.168.232.242:5000/predict'),
       );
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
 
