@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     // Navigate to LoginScreen after 9 seconds
     Timer(
-      const Duration(seconds: 9),
+      const Duration(seconds: 3),
           () => Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) =>  LoginScreen()),
@@ -33,10 +33,10 @@ class _SplashScreenState extends State<SplashScreen> {
       backgroundColor: Colors.black, // Set background color to black
       body: Center(
         child: SizedBox(
-          height: screenHeight * 0.5, // 50% of the screen height
+          height: screenHeight * 2, // 50% of the screen height
           width: screenWidth, // Full screen width
           child: Image.asset(
-            'images/n3.gif', // Path to the GIF
+            'images/splash.gif', // Path to the GIF
             fit: BoxFit.cover, // Fill the container
           ),
         ),

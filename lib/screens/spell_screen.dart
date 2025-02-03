@@ -1,624 +1,441 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
-import 'dart:io';
-import 'dart:convert';
-import 'dart:ui';
+import 'Spellcheck_screen.dart';
 
-class SpellScreen extends StatefulWidget {
-  const SpellScreen({super.key});
+class GameScreen extends StatefulWidget {
+  final int level;
+  final Function(int) onLevelComplete;
+
+  const GameScreen({
+    super.key,
+    required this.level,
+    required this.onLevelComplete,
+  });
 
   @override
-  State<SpellScreen> createState() => _SpellScreenState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
-class _SpellScreenState extends State<SpellScreen> with TickerProviderStateMixin {
-  final _textController = TextEditingController();
-  final _audioPlayer = AudioPlayer();
-  final _audioRecorder = Record();
+class _GameScreenState extends State<GameScreen> {
+  bool _isWordCompleted = false;
 
-  String? _recordedPath;
-  String? _generatedAudioPath;
-  String? _imageUrl;
-  bool _isRecording = false;
-  bool _isPlaying = false;
-  bool _isLoading = false;
-  bool _isLoadingImage = false;
-  String _result = '';
+  void _handleWordCompletion() {
+    setState(() {
+      _isWordCompleted = true;
+    });
 
-  // Enhanced color palette
-  static const primaryColor = Color(0xFF6C63FF);
-  static const secondaryColor = Color(0xFF8B80FF);
-  static const backgroundColor = Color(0xFF0A0A1E);
-  static const surfaceColor = Color(0xFF1A1A2F);
-  static const accentColor = Color(0xFFFF63B8);
-  static const successColor = Color(0xFF4CAF50);
-
-  // Animation controllers
-  late AnimationController _recordingAnimationController;
-  late AnimationController _buttonScaleController;
-  late AnimationController _resultSlideController;
-
-  // Animations
-  late Animation<double> _recordingAnimation;
-  late Animation<double> _buttonScaleAnimation;
-  late Animation<Offset> _resultSlideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _requestPermissions();
-    _setupAnimations();
-  }
-
-  Future<void> _requestPermissions() async {
-    await Permission.microphone.request();
-    await Permission.storage.request();
-  }
-
-  Future<void> _fetchImage(String word) async {
-    setState(() => _isLoadingImage = true);
-
-    try {
-      // Replace YOUR_UNSPLASH_ACCESS_KEY with your actual Unsplash access key
-      final response = await http.get(
-        Uri.parse(
-            'https://api.unsplash.com/search/photos?query=$word&per_page=1'
+    // Navigate to Achievement Screen with a slight delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (context, animation, secondaryAnimation) => AchievementScreen(
+            level: widget.level,
+            onContinue: () {
+              widget.onLevelComplete(widget.level);
+              // Navigate directly to the next level's GameScreen
+              if (widget.level < 5) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GameScreen(
+                      level: widget.level + 1,
+                      onLevelComplete: widget.onLevelComplete,
+                    ),
+                  ),
+                );
+              } else {
+                // If all levels complete, return to level selection
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LvlScreen(initialPage: 0),
+                  ),
+                );
+              }
+            },
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
         ),
-        headers: {
-          'Authorization': 'Client-ID YOUR_UNSPLASH_ACCESS_KEY',
-        },
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['results'].isNotEmpty) {
-          setState(() {
-            _imageUrl = data['results'][0]['urls']['regular'];
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Error fetching image: $e');
-    } finally {
-      setState(() => _isLoadingImage = false);
-    }
-  }
-
-  void _setupAnimations() {
-    // Recording pulse animation
-    _recordingAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _recordingAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.3,
-    ).animate(CurvedAnimation(
-      parent: _recordingAnimationController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Button scale animation
-    _buttonScaleController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-
-    _buttonScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _buttonScaleController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Result slide animation
-    _resultSlideController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    _resultSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _resultSlideController,
-      curve: Curves.easeOutCubic,
-    ));
-  }
-
-  Future<void> _startRecording() async {
-    try {
-      final dir = await getTemporaryDirectory();
-      final filepath = path.join(dir.path, 'recorded_audio.wav');
-      _recordedPath = filepath;
-
-      if (await _audioRecorder.hasPermission()) {
-        await _audioRecorder.start(
-          encoder: AudioEncoder.wav,
-          samplingRate: 44100,
-          path: filepath,
-        );
-        setState(() => _isRecording = true);
-      } else {
-        _showSnackBar('Microphone permission denied');
-      }
-    } catch (e) {
-      debugPrint('Error recording: $e');
-      _showSnackBar('Error recording: $e');
-    }
-  }
-
-  Future<void> _stopRecording() async {
-    try {
-      await _audioRecorder.stop();
-      setState(() => _isRecording = false);
-    } catch (e) {
-      debugPrint('Error stopping recording: $e');
-      _showSnackBar('Error stopping recording: $e');
-    }
-  }
-
-  Future<void> _playAudio(String? audioPath) async {
-    if (audioPath == null) return;
-
-    try {
-      await _audioPlayer.setFilePath(audioPath);
-      await _audioPlayer.play();
-      setState(() => _isPlaying = true);
-
-      _audioPlayer.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          setState(() => _isPlaying = false);
-        }
-      });
-    } catch (e) {
-      debugPrint('Error playing audio: $e');
-      _showSnackBar('Error playing audio: $e');
-    }
-  }
-
-  Future<void> _compareAudio() async {
-    if (_recordedPath == null || _textController.text.isEmpty) {
-      _showSnackBar('Please record audio and enter text first');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Fetch image for the word
-      await _fetchImage(_textController.text);
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://192.168.142.242:5000/check-pronunciation'),
-      );
-
-      request.fields['text'] = _textController.text;
-      request.files.add(await http.MultipartFile.fromPath(
-        'audio',
-        _recordedPath!,
-      ));
-
-      var response = await request.send();
-      var responseData = await response.stream.bytesToString();
-      var jsonResponse = json.decode(responseData);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          _result =
-          'Similarity Score: ${jsonResponse['similarity_score'].toStringAsFixed(2)}';
-          _generatedAudioPath = jsonResponse['generated_audio_path'];
-        });
-        _resultSlideController.forward();
-      } else {
-        setState(() => _result = 'Error: ${jsonResponse['error']}');
-      }
-    } catch (e) {
-      setState(() => _result = 'Error: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: surfaceColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassmorphicContainer({
-    required Widget child,
-    double blur = 10,
-    double opacity = 0.1,
-    bool addGlow = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: addGlow
-            ? [
-          BoxShadow(
-            color: primaryColor.withOpacity(0.2),
-            blurRadius: 20,
-            spreadRadius: -5,
-          )
-        ]
-            : null,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(opacity),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1.5,
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.2),
-                  Colors.white.withOpacity(0.05),
-                ],
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required VoidCallback onPressed,
-    required String text,
-    required IconData icon,
-    bool isLoading = false,
-    bool isPrimary = true,
-  }) {
-    return ScaleTransition(
-      scale: _buttonScaleAnimation,
-      child: _buildGlassmorphicContainer(
-        blur: 15,
-        opacity: 0.15,
-        addGlow: isPrimary,
-        child: Container(
-          width: double.infinity,
-          height: 60,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTapDown: (_) => _buttonScaleController.forward(),
-              onTapUp: (_) => _buttonScaleController.reverse(),
-              onTapCancel: () => _buttonScaleController.reverse(),
-              onTap: isLoading ? null : onPressed,
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      icon,
-                      color: isPrimary ? accentColor : secondaryColor,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: isPrimary
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                    if (isLoading) ...[
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: accentColor,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecordingIndicator() {
-    if (!_isRecording) return const SizedBox.shrink();
-
-    return Row(
-      children: [
-        ScaleTransition(
-          scale: _recordingAnimation,
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          'Recording...',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResultCard() {
-    if (_result.isEmpty) return const SizedBox.shrink();
-
-    final score = double.tryParse(
-      _result.split(': ').last.replaceAll(RegExp(r'[^0-9.]'), ''),
-    ) ??
-        0.0;
-
-    return SlideTransition(
-      position: _resultSlideAnimation,
-      child: _buildGlassmorphicContainer(
-        blur: 15,
-        opacity: 0.15,
-        addGlow: score > 0.7,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    score > 0.7 ? Icons.emoji_events : Icons.analytics,
-                    color: score > 0.7 ? Colors.amber : accentColor,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    score > 0.7 ? 'Excellent!' : 'Pronunciation Score',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                _result,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: score > 0.7 ? successColor : Colors.white.withOpacity(0.9),
-                ),
-              ),
-              if (score > 0.7) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: successColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: successColor.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: successColor,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Perfect Pronunciation!',
-                        style: TextStyle(
-                          color: successColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  Widget _buildImagePreview() {
-    if (_imageUrl == null && !_isLoadingImage) return const SizedBox.shrink();
-
-    return _buildGlassmorphicContainer(
-      blur: 15,
-      opacity: 0.15,
-      child: Container(
-        height: 200,
-        width: double.infinity,
-        margin: const EdgeInsets.symmetric(vertical: 16),
-        child: _isLoadingImage
-            ? Shimmer.fromColors(
-          baseColor: surfaceColor,
-          highlightColor: surfaceColor.withOpacity(0.5),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-          ),
-        )
-            : ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: CachedNetworkImage(
-            imageUrl: _imageUrl!,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Shimmer.fromColors(
-              baseColor: surfaceColor,
-              highlightColor: surfaceColor.withOpacity(0.5),
-              child: Container(
-                color: Colors.white,
-              ),
-            ),
-            errorWidget: (context, url, error) => const Center(
-              child: Icon(
-                Icons.error_outline,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Stack(
+        children: [
+          PronunciationScreen(
+            level: widget.level,
+            onWordCompleted: _handleWordCompletion,
+            onLevelComplete: widget.onLevelComplete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LvlScreen extends StatefulWidget {
+  final int initialPage;
+
+  const LvlScreen({super.key, required this.initialPage});
+
+  @override
+  State<LvlScreen> createState() => _LvlScreenState();
+}
+
+class _LvlScreenState extends State<LvlScreen> with SingleTickerProviderStateMixin {
+  late PageController _pageController;
+  double _page = 0;
+  int _currentPage = 0;
+  List<bool> unlockedLevels = [true, false, false, false, false];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      viewportFraction: 0.8,
+      initialPage: widget.initialPage,
+    );
+    _pageController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    setState(() {
+      _page = _pageController.page ?? 0;
+      _currentPage = _page.round();
+    });
+  }
+
+  void _handleLevelComplete(int completedLevel) {
+    setState(() {
+      if (completedLevel < unlockedLevels.length - 1) {
+        unlockedLevels[completedLevel] = true;
+        unlockedLevels[completedLevel + 1] = true;
+
+        // Auto-scroll to next level
+        Future.delayed(const Duration(minutes: 5), () {
+          _pageController.animateToPage(
+            completedLevel + 1,
+            duration: const Duration(minutes: 5),
+            curve: Curves.easeInOut,
+          );
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/img_13.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
             children: [
-              const Text(
-                'SpeakEasy',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 32),
-              _buildGlassmorphicContainer(
-                blur: 15,
-                opacity: 0.15,
-                child: TextField(
-                  controller: _textController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Enter word to practice...',
-                    hintStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+              const WordCloud(),
+              PageView.builder(
+                controller: _pageController,
+                itemCount: 5,
+                onPageChanged: (page) => setState(() => _currentPage = page),
+                itemBuilder: (context, index) {
+                  final difference = (index - _page);
+                  final scale = 1 - (difference.abs() * 0.3).clamp(0.0, 0.4);
+
+                  return Transform(
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, 0.002)
+                      ..rotateY(difference * 0.5)
+                      ..scale(scale),
+                    alignment: difference < 0
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (unlockedLevels[index]) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GameScreen(
+                                level: index + 1,
+                                onLevelComplete: _handleLevelComplete,
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Complete Level ${index} first!'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      child: LevelCard(
+                        level: index + 1,
+                        isLocked: !unlockedLevels[index],
+                        isCurrentPage: index == _currentPage,
+                      ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    contentPadding: const EdgeInsets.all(20),
-                  ),
-                ),
+                  );
+                },
               ),
-              const SizedBox(height: 24),
-              _buildImagePreview(),
-              const SizedBox(height: 24),
-              _buildRecordingIndicator(),
-              const SizedBox(height: 16),
-              _buildActionButton(
-                onPressed: _isRecording ? _stopRecording : _startRecording,
-                text: _isRecording ? 'Stop Recording' : 'Start Recording',
-                icon: _isRecording ? Icons.stop : Icons.mic,
-                isPrimary: true,
-              ),
-              if (_recordedPath != null) ...[
-                _buildActionButton(
-                  onPressed: () => _playAudio(_recordedPath),
-                  text: 'Play Recording',
-                  icon: Icons.play_arrow,
-                  isPrimary: false,
-                ),
-              ],
-              if (_generatedAudioPath != null) ...[
-                _buildActionButton(
-                  onPressed: () => _playAudio(_generatedAudioPath),
-                  text: 'Play Generated Audio',
-                  icon: Icons.volume_up,
-                  isPrimary: false,
-                ),
-              ],
-              _buildActionButton(
-                onPressed: _compareAudio,
-                text: 'Check Pronunciation',
-                icon: Icons.compare,
-                isLoading: _isLoading,
-                isPrimary: true,
-              ),
-              const SizedBox(height: 24),
-              _buildResultCard(),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+class AchievementScreen extends StatefulWidget {
+  final int level;
+  final VoidCallback onContinue;
+
+  const AchievementScreen({
+    Key? key,
+    required this.level,
+    required this.onContinue,
+  }) : super(key: key);
+
+  @override
+  State<AchievementScreen> createState() => _AchievementScreenState();
+}
+
+class _AchievementScreenState extends State<AchievementScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticOut,
+    );
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
-    _textController.dispose();
-    _audioPlayer.dispose();
-    _audioRecorder.dispose();
-    _recordingAnimationController.dispose();
-    _buttonScaleController.dispose();
-    _resultSlideController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black87,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.stars,
+                    color: Colors.amber,
+                    size: 100,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Level ${widget.level} Complete!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.level < 5
+                        ? 'Get ready for Level ${widget.level + 1}!'
+                        : 'Congratulations! All levels complete!',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurpleAccent,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 15,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              onPressed: widget.onContinue,
+              child: Text(
+                widget.level < 5 ? 'Next Level' : 'Finish',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LevelCard extends StatelessWidget {
+  final int level;
+  final bool isLocked;
+  final bool isCurrentPage;
+
+  const LevelCard({
+    super.key,
+    required this.level,
+    required this.isLocked,
+    required this.isCurrentPage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: EdgeInsets.symmetric(
+        vertical: isCurrentPage ? 20 : 40,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          GradientBorderContainer(
+            isLocked: isLocked,
+            child: isLocked
+                ? Shimmer.fromColors(
+              baseColor: Colors.grey[800]!,
+              highlightColor: Colors.grey[500]!,
+              child: Container(
+                width: size.width * 0.7,
+                height: size.height * 0.4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  color: Colors.grey[800],
+                ),
+              ),
+            )
+                : Container(
+              width: size.width * 0.7,
+              height: size.height * 0.4,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.deepPurple,
+              ),
+            ),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'LEVEL $level',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(isLocked ? 0.5 : 1.0),
+                  fontSize: size.width * 0.08,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (isLocked)
+                const Icon(
+                  Icons.lock,
+                  color: Colors.white54,
+                  size: 50,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class GradientBorderContainer extends StatelessWidget {
+  final bool isLocked;
+  final Widget child;
+
+  const GradientBorderContainer({
+    super.key,
+    required this.isLocked,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isLocked
+            ? null
+            : const LinearGradient(
+          colors: [Colors.deepPurple, Colors.purple],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: child,
+    );
+  }
+}
+
+class WordCloud extends StatelessWidget {
+  const WordCloud({super.key});
+
+  static const List<String> words = [];
+
+  @override
+  Widget build(BuildContext context) {
+    final random = Random();
+    final size = MediaQuery.of(context).size;
+
+    return Stack(
+      children: words.map((word) {
+        return Positioned(
+          left: random.nextDouble() * size.width,
+          top: random.nextDouble() * size.height,
+          child: Text(
+            word,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: size.width * 0.04,
+              fontWeight: FontWeight.w300,
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
