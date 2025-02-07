@@ -11,7 +11,7 @@ class ChatService {
   final http.Client client;
 
   ChatService({
-    this.baseUrl = 'http://192.168.169.136:5000',
+    this.baseUrl = 'http://192.168.232.136:5000',
     http.Client? client,
   }) : this.client = client ?? http.Client();
 
