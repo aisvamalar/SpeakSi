@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for SystemChrome
 import 'package:firebase_core/firebase_core.dart';
 import 'package:speaksi/screens/splash_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,12 @@ Future<void> main() async {
     appleProvider: AppleProvider.appAttest,
   );
 
+
+  await Supabase.initialize(
+    url: 'https://zbqtsfvwfsdyzsbfbwys.supabase.co',
+    anonKey:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicXRzZnZ3ZnNkeXpzYmZid3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1Mjc0NTIsImV4cCI6MjA1MzEwMzQ1Mn0.QBo3D2O3iWNR-0A3mP98sdQ7KMMNNhwSTH4zjHN8vkA',
+  );
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

@@ -1,10 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:speaksi/screens/login_screen.dart';
 import 'package:speaksi/screens/set_screen.dart';
 
 
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({Key? key}) : super(key: key);
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen ({Key? key}) : super(key: key);
+  @override
+  _ProfileScreenState createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final supabase = Supabase.instance.client;
+
+  // Future method to handle logout
+  Future<void> _handleLogout() async {
+    try {
+      // Sign out from Supabase first
+      await supabase.auth.signOut();
+
+      // Clear local storage after successful sign out
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Navigate to login screen
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error during logout: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to handle account switching
+  void _handleSwitchAccount() {
+    showDialog(
+      context: context,
+      builder: (context) => const AccountSwitchDialog(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +98,6 @@ class ProfileScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(builder: (context) => SetScreen()),
                       );
-
                     },
                     delay: 400,
                   ),
@@ -75,6 +120,11 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildAnimatedProfileSection() {
+    // Get user data from Supabase
+    final user = supabase.auth.currentUser;
+    final userEmail = user?.email ?? 'No email';
+    final userName = user?.userMetadata?['name'] ?? userEmail.split('@')[0];
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 800),
@@ -108,21 +158,21 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   _buildGlowingAvatar(),
                   const SizedBox(width: 15),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Siddharth',
-                        style: TextStyle(
+                        userName,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        '@signinx',
-                        style: TextStyle(
+                        '@${userName.toLowerCase()}',
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
                         ),
@@ -139,6 +189,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildGlowingAvatar() {
+    final user = supabase.auth.currentUser;
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -153,7 +204,12 @@ class ProfileScreen extends StatelessWidget {
       child: CircleAvatar(
         radius: 30,
         backgroundColor: Colors.grey[300],
-        child: const Icon(Icons.person, size: 30, color: Colors.grey),
+        backgroundImage: user?.userMetadata?['avatar_url'] != null
+            ? NetworkImage(user!.userMetadata!['avatar_url']) as ImageProvider
+            : null,
+        child: user?.userMetadata?['avatar_url'] == null
+            ? const Icon(Icons.person, size: 30, color: Colors.grey)
+            : null,
       ),
     );
   }
@@ -443,7 +499,7 @@ class ProfileScreen extends StatelessWidget {
                     color: Colors.transparent,
                     borderColor: Colors.white,
                     textColor: Colors.white,
-                    onPressed: () {},
+                    onPressed: _handleLogout, // Using the logout function here
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -453,7 +509,7 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.swap_horiz,
                     color: const Color(0xFF6A1B9A),
                     textColor: Colors.white,
-                    onPressed: () {},
+                    onPressed: _handleSwitchAccount, // Using the switch account function here
                   ),
                 ),
               ],
@@ -491,6 +547,66 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class AccountSwitchDialog extends StatelessWidget {
+  const AccountSwitchDialog({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.purple.shade900,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Switch Account',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildAccountOption(context, 'Siddharth', 'Current Account'),
+            _buildAccountOption(context, 'Work Account', 'Premium'),
+            _buildAccountOption(context, 'Personal Account', 'Free'),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/add-account');
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.purple.shade300),
+              ),
+              child: Text(
+                'Add Another Account',
+                style: TextStyle(color: Colors.purple.shade300),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountOption(BuildContext context, String name, String status) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.purple.shade300,
+        child: Text(name[0], style: const TextStyle(color: Colors.white)),
+      ),
+      title: Text(name, style: const TextStyle(color: Colors.white)),
+      subtitle: Text(status, style: const TextStyle(color: Colors.grey)),
+      onTap: () {
+        // Handle account switch
+        Navigator.pop(context);
+      },
     );
   }
 }

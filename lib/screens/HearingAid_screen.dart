@@ -162,7 +162,7 @@ class _HearingAidScreenState extends State<HearingAidScreen> {
   Future<void> _fetchLastData() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.232.49:5000/get_earwax_level'),
+        Uri.parse('http://192.168.201.125:5000/get_earwax_level'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -199,7 +199,7 @@ class _HearingAidScreenState extends State<HearingAidScreen> {
   Future<void> _fetchFallbackData() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.232.49:5000/reset_earwax'),
+        Uri.parse('http://192.168.16.125:5000/reset_earwax'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -236,7 +236,7 @@ class _HearingAidScreenState extends State<HearingAidScreen> {
   Future<void> _callResetApi() async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.232.49:5000/reset_earwax'),
+        Uri.parse('http://192.168.201.125:5000/reset_earwax'),
         headers: {
           'Content-Type': 'application/json',
         },

@@ -59,6 +59,9 @@ dependencies:
   http: ^1.1.0
   shared_preferences: ^2.0.0
   awesome_notifications: ^0.8.2
+  supabase_flutter: ^2.8.3
+  syncfusion_flutter_charts: ^20.4.48
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:

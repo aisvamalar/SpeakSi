@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PronunciationScreen extends StatefulWidget {
   final int level;
@@ -35,7 +36,6 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
   List<String> _correctLetters = [];
   String _pronunciationTips = '';
   bool _showTrophyAnimation = false;
-
   final Map<int, List<String>> levelWords = {
     1: ['Cat', 'Dog', 'Hat', 'Bat'],
     2: ['Apple', 'Table', 'Chair', 'Book'],
@@ -51,9 +51,9 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
   }
 
   @override
-  void dispose() async {
+  void dispose() {
     _audioPlayer.dispose();
-    await _recorder.dispose();
+    _recorder.dispose();
     super.dispose();
   }
 
@@ -102,7 +102,7 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
       _isLoading = true;
     });
 
-    var uri = Uri.parse('http://192.168.232.242:5000/check-pronunciation');
+    var uri = Uri.parse('http://192.168.201.242:5000/check-pronunciation');
     var request = http.MultipartRequest('POST', uri)
       ..fields['text'] = _generatedWord
       ..files.add(await http.MultipartFile.fromPath('audio', _audioPath!));
@@ -112,18 +112,24 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
       if (response.statusCode == 200) {
         var responseData = await http.Response.fromStream(response);
         var data = json.decode(responseData.body);
+
+        double similarity =
+            double.tryParse(data['similarity']?.toString() ?? '') ?? 0.0;
+
         setState(() {
-          _similarityScore = data['similarity'].toString();
+          _similarityScore = similarity.toString();
           _mismatchedLetters = List<String>.from(data['mis_matchings'] ?? []);
-          _correctLetters = _generatedWord.split('')
+          _correctLetters = _generatedWord
+              .split('')
               .where((letter) => !_mismatchedLetters.contains(letter))
               .toList();
           _pronunciationTips = data['tips'] ?? 'No specific tips available.';
         });
 
-        // Check if pronunciation is good enough to proceed
-        if (double.parse(_similarityScore) > 70) {
-          Future.delayed(const Duration(seconds: 100), () {
+        await _storeDataInSupabase();
+
+        if (similarity > 70) {
+          Future.delayed(const Duration(seconds: 10), () {
             if (mounted) {
               setState(() {
                 _showTrophyAnimation = true;
@@ -154,10 +160,38 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
     }
   }
 
+  Future<void> _storeDataInSupabase() async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        print('Error: No authenticated user found');
+        return;
+      }
+
+      double similarity = double.tryParse(_similarityScore) ?? 0.0;
+
+      final response = await Supabase.instance.client.from('score_base').insert({
+        'user_id': currentUser.id,
+        'word': _generatedWord,
+        'similarity_score': similarity,
+        'mismatched_letters': _mismatchedLetters.join(','),
+      });
+
+      if (response.error != null) {
+        print('Error storing data in Supabase: ${response.error!.message}');
+      } else {
+        print('Practice data stored successfully in Supabase');
+      }
+    } catch (e) {
+      print('Exception occurred while storing practice data in Supabase: $e');
+    }
+  }
+
   void _generateRandomWord() {
     final words = levelWords[widget.level] ?? levelWords[1]!;
     setState(() {
-      _generatedWord = words[DateTime.now().millisecondsSinceEpoch % words.length];
+      _generatedWord =
+      words[DateTime.now().millisecondsSinceEpoch % words.length];
       _similarityScore = '';
       _mismatchedLetters = [];
       _correctLetters = [];
@@ -168,22 +202,22 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF4527A0).withOpacity(0.5),
-        elevation: 0,
-        title: const Text('Pronunciation Checker'),
-      ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF4527A0).withOpacity(0.5),
+            elevation: 0,
+            title: const Text('Pronunciation Checker'),
+          ),
+          body: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Pronounce this word:',
                     style: TextStyle(
                       color: Colors.white,
@@ -205,11 +239,14 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isRecording ? Colors.red : const Color(0xFF5B3BBB),
+                          backgroundColor: _isRecording
+                              ? Colors.red
+                              : const Color(0xFF5B3BBB),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
                         ),
                         onPressed: _isRecording ? _stopRecording : _startRecording,
                         child: Row(
@@ -235,7 +272,8 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
                           ),
                           onPressed: _playRecording,
                           child: Row(
@@ -259,9 +297,10 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                     ),
-                    onPressed: _audioPath != null && !_isLoading ? _sendToAPI : null,
+                    onPressed: _audioPath != null ? _sendToAPI : null,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
@@ -282,7 +321,7 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                         Text(
                           'Similarity Score: $_similarityScore%',
                           style: TextStyle(
-                            color: double.parse(_similarityScore) > 70
+                            color: (double.tryParse(_similarityScore) ?? 0.0) > 70
                                 ? Colors.green
                                 : Colors.red,
                             fontSize: 20,
@@ -301,7 +340,8 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                                   : const Color(0xFF4CAF50);
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 1),
+                                padding:
+                                const EdgeInsets.symmetric(horizontal: 1),
                                 child: Container(
                                   width: 30,
                                   height: 55,
@@ -335,14 +375,14 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                children: const [
-                                  Icon(
+                                children: [
+                                  const Icon(
                                     Icons.lightbulb,
                                     color: Color(0xFFFFC107),
                                     size: 28,
                                   ),
-                                  SizedBox(width: 12),
-                                  Text(
+                                  const SizedBox(width: 12),
+                                  const Text(
                                     'Pronunciation Tips:',
                                     style: TextStyle(
                                       color: Colors.amber,
@@ -378,17 +418,17 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
               ),
             ),
           ),
-          if (_isLoading)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.deepPurpleAccent,
-                ),
+        ),
+        if (_isLoading)
+          Container(
+            color: Colors.black54,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.deepPurpleAccent,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

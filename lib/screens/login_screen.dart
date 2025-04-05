@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:speaksi/screens/signup_screen.dart';
 import 'package:speaksi/screens/toast.dart';
 import 'home_screen.dart';
@@ -22,8 +23,7 @@ class AuthService {
 
   Future<UserCredential> signInWithGoogle() async {
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    final GoogleSignInAuthentication? googleAuth =
-    await googleUser?.authentication;
+    final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
 
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth?.accessToken,
@@ -35,6 +35,8 @@ class AuthService {
 }
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -75,28 +77,27 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 150),
-                Text(
+                const SizedBox(height: 150),
+                const Text(
                   'Welcome Back',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                )
-                    .animate()
+                ).animate()
                     .fadeIn(duration: 1000.ms)
                     .slideY(begin: 1.0, end: 0.0, curve: Curves.easeInOut)
                     .then(delay: 500.ms),
-                SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 12),
+                const Text(
                   'Welcome back, we missed you',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                   ),
                 ),
-                SizedBox(height: 60),
+                const SizedBox(height: 60),
                 Form(
                   key: _formKey,
                   child: Column(
@@ -105,8 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _emailController,
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          prefixIcon: Icon(Icons.email, color: Colors.grey),
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: const Icon(Icons.email, color: Colors.grey),
                           fillColor: Colors.grey[800],
                           filled: true,
                           border: OutlineInputBorder(
@@ -114,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'Please enter your email';
@@ -122,14 +123,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: obscureText,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          prefixIcon: Icon(Icons.lock, color: Colors.grey),
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                           suffixIcon: IconButton(
                             icon: Icon(
                               obscureText ? Icons.visibility : Icons.visibility_off,
@@ -148,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'Please enter your password';
@@ -156,48 +157,48 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 40),
+                      const SizedBox(height: 40),
                       SizedBox(
                         width: 200,
                         height: 50,
                         child: ElevatedButton(
                           onPressed: _isSigning ? null : _signIn,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF7B3DFF),
+                            backgroundColor: const Color(0xFF7B3DFF),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24.0),
                             ),
                           ),
                           child: _isSigning
-                              ? CircularProgressIndicator(color: Colors.white)
-                              : Text('Log in', style: TextStyle(color: Colors.white)),
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text('Log in', style: TextStyle(color: Colors.white)),
                         ),
                       ),
-                      SizedBox(height: 30),
-                      Text('Or continue with', style: TextStyle(color: Colors.grey)),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
+                      const Text('Or continue with', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 30),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _buildSocialLoginButton('images/img_1.png'),
-                          SizedBox(width: 16),
+                          const SizedBox(width: 16),
                           _buildSocialLoginButton('images/img_3.png'),
-                          SizedBox(width: 16),
+                          const SizedBox(width: 16),
                           _buildSocialLoginButton('images/img.png'),
                         ],
                       ),
-                      SizedBox(height: 40),
+                      const SizedBox(height: 40),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("Don't have an account?", style: TextStyle(color: Colors.grey)),
+                          const Text("Don't have an account?", style: TextStyle(color: Colors.grey)),
                           TextButton(
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(builder: (context) => SignupScreen()),
                               );
                             },
-                            child: Text('Sign up', style: TextStyle(color: Color(0xFF7B3DFF))),
+                            child: const Text('Sign up', style: TextStyle(color: Color(0xFF7B3DFF))),
                           ),
                         ],
                       ),
@@ -229,7 +230,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -237,16 +237,22 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        final userCredential = await _authService.signInWithEmail(
-          email: _emailController.text,
-          password: _passwordController.text,
+        final email = _emailController.text;
+        final password = _passwordController.text;
+
+        // Directly authenticate using Supabase Auth
+        final response = await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
         );
 
-        if (userCredential.user != null) {
+        if (response.user != null) {
           sharedPreferences!.setBool('isLoggedIn', true);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (ctx) => HomeScreen()),
           );
+        } else {
+          showToast(message: 'Login failed. Please check your credentials.');
         }
       } catch (e) {
         showToast(message: e.toString());

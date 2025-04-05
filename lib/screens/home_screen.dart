@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import 'package:speaksi/screens/notification_manager.dart';
 import 'package:speaksi/screens/profile_screen.dart';
 import 'package:speaksi/screens/spell_screen.dart';
+import 'package:speaksi/screens/statistics_screen.dart';
 import 'package:speaksi/screens/voiceassistant_screen.dart';
 
 import 'chatbot_screen.dart';
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _screens = [
     HomeContent(),
-    Center(child: Text('Statistics Page', style: TextStyle(color: Colors.amber))),
+    StatisticsScreen(),
     ProfileScreen(),
   ];
 
